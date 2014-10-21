@@ -15,6 +15,7 @@
 
 from pbr.hooks import base
 from pbr import packaging
+from pbr import requirements
 
 
 class MetadataConfig(base.BaseConfig):
@@ -24,9 +25,8 @@ class MetadataConfig(base.BaseConfig):
     def hook(self):
         self.config['version'] = packaging.get_version(
             self.config['name'], self.config.get('version', None))
-        packaging.append_text_list(
-            self.config, 'requires_dist',
-            packaging.parse_requirements())
+        self.append_text_list('requires_dist',
+                              requirements.parse_requirements())
 
     def get_name(self):
         return self.config['name']

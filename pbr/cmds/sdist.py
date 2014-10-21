@@ -13,20 +13,21 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from pbr.hooks import base
-from pbr import requirements
+from __future__ import unicode_literals
+
+from setuptools.command import sdist
+
+from pbr import git
 
 
-class BackwardsCompatConfig(base.BaseConfig):
+class LocalSDist(sdist.sdist):
+    """Builds the ChangeLog and Authors files from VC first."""
 
-    section = 'backwards_compat'
+    command_name = 'sdist'
 
-    def hook(self):
-        self.config['include_package_data'] = 'True'
-
-        self.append_text_list('dependency_links',
-                              requirements.parse_dependency_links())
-
-        self.append_text_list('tests_require',
-                              requirements.parse_requirements(
-                                  requirements.TEST_REQUIREMENTS_FILES))
+    def run(self):
+        option_dict = self.distribution.get_option_dict('pbr')
+        git.write_git_changelog(option_dict=option_dict)
+        git.generate_authors(option_dict=option_dict)
+        # sdist.sdist is an old style class, can't use super()
+        sdist.sdist.run(self)

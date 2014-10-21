@@ -17,8 +17,11 @@ import os
 
 from setuptools.command import easy_install
 
+from pbr.cmds import build_doc
+from pbr.cmds import install_scripts
+from pbr.cmds import test
+from pbr import common
 from pbr.hooks import base
-from pbr import packaging
 
 
 class CommandsConfig(base.BaseConfig):
@@ -37,25 +40,26 @@ class CommandsConfig(base.BaseConfig):
         self.commands = "%s\n%s" % (self.commands, command)
 
     def hook(self):
-        self.add_command('pbr.packaging.LocalEggInfo')
-        self.add_command('pbr.packaging.LocalSDist')
-        self.add_command('pbr.packaging.LocalInstallScripts')
+        self.add_command('pbr.cmds.egg_info.LocalEggInfo')
+        self.add_command('pbr.cmds.sdist.LocalSDist')
+        self.add_command('pbr.cmds.install_scripts.LocalInstallScripts')
         if os.name != 'nt':
-            easy_install.get_script_args = packaging.override_get_script_args
+            easy_install.get_script_args = \
+                install_scripts.override_get_script_args
 
-        if packaging.have_sphinx():
-            self.add_command('pbr.packaging.LocalBuildDoc')
-            self.add_command('pbr.packaging.LocalBuildLatex')
+        if build_doc.have_sphinx():
+            self.add_command('pbr.cmds.build_doc.LocalBuildDoc')
+            self.add_command('pbr.cmds.build_doc.LocalBuildLatex')
 
-        if os.path.exists('.testr.conf') and packaging.have_testr():
+        if os.path.exists('.testr.conf') and test.have_testr():
             # There is a .testr.conf file. We want to use it.
-            self.add_command('pbr.packaging.TestrTest')
-        elif self.config.get('nosetests', False) and packaging.have_nose():
+            self.add_command('pbr.cmds.test.TestrTest')
+        elif self.config.get('nosetests', False) and test.have_nose():
             # We seem to still have nose configured
-            self.add_command('pbr.packaging.NoseTest')
+            self.add_command('pbr.cmds.test.NoseTest')
 
-        use_egg = packaging.get_boolean_option(
+        use_egg = common.get_boolean_option(
             self.pbr_config, 'use-egg', 'PBR_USE_EGG')
         # We always want non-egg install unless explicitly requested
         if 'manpages' in self.pbr_config or not use_egg:
-            self.add_command('pbr.packaging.LocalInstall')
+            self.add_command('pbr.cmds.install.LocalInstall')

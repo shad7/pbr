@@ -32,3 +32,12 @@ class BaseConfig(object):
 
     def save(self):
         self._global_config[self.section] = self.config
+
+    def append_text_list(self, key, text_list):
+        """Append a \n separated list to possibly existing value."""
+        new_value = []
+        current_value = self.config.get(key, '')
+        if current_value:
+            new_value.append(current_value)
+        new_value.extend(text_list)
+        self.config[key] = '\n'.join(new_value)

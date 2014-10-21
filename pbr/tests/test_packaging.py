@@ -46,7 +46,10 @@ import mock
 import testscenarios
 from testtools import matchers
 
+from pbr import common
+from pbr import git
 from pbr import packaging
+from pbr import requirements as pbr_req
 from pbr.tests import base
 
 
@@ -188,16 +191,16 @@ class TestPackagingInPlainDirectory(base.BaseTestCase):
 class TestPresenceOfGit(base.BaseTestCase):
 
     def testGitIsInstalled(self):
-        with mock.patch.object(packaging,
-                               '_run_shell_command') as _command:
+        with mock.patch.object(common,
+                               'run_shell_command') as _command:
             _command.return_value = 'git version 1.8.4.1'
-            self.assertEqual(True, packaging._git_is_installed())
+            self.assertEqual(True, git.git_is_installed())
 
     def testGitIsNotInstalled(self):
-        with mock.patch.object(packaging,
-                               '_run_shell_command') as _command:
+        with mock.patch.object(common,
+                               'run_shell_command') as _command:
             _command.side_effect = OSError
-            self.assertEqual(False, packaging._git_is_installed())
+            self.assertEqual(False, git.git_is_installed())
 
 
 class TestNestedRequirements(base.BaseTestCase):
@@ -210,7 +213,7 @@ class TestNestedRequirements(base.BaseTestCase):
             f.write('-r ' + nested)
         with open(nested, 'w') as f:
             f.write('pbr')
-        result = packaging.parse_requirements([requirements])
+        result = pbr_req.parse_requirements([requirements])
         self.assertEqual(result, ['pbr'])
 
 

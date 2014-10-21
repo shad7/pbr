@@ -30,7 +30,10 @@ except ImportError:
 import fixtures
 import testscenarios
 
-from pbr import packaging
+from pbr.cmds import build_doc as build_doc_cmd
+from pbr import common
+from pbr import git
+from pbr import requirements
 from pbr.tests import base
 
 
@@ -40,44 +43,44 @@ class SkipFileWrites(base.BaseTestCase):
         ('changelog_option_true',
          dict(option_key='skip_changelog', option_value='True',
               env_key='SKIP_WRITE_GIT_CHANGELOG', env_value=None,
-              pkg_func=packaging.write_git_changelog, filename='ChangeLog')),
+              pkg_func=git.write_git_changelog, filename='ChangeLog')),
         ('changelog_option_false',
          dict(option_key='skip_changelog', option_value='False',
               env_key='SKIP_WRITE_GIT_CHANGELOG', env_value=None,
-              pkg_func=packaging.write_git_changelog, filename='ChangeLog')),
+              pkg_func=git.write_git_changelog, filename='ChangeLog')),
         ('changelog_env_true',
          dict(option_key='skip_changelog', option_value='False',
               env_key='SKIP_WRITE_GIT_CHANGELOG', env_value='True',
-              pkg_func=packaging.write_git_changelog, filename='ChangeLog')),
+              pkg_func=git.write_git_changelog, filename='ChangeLog')),
         ('changelog_both_true',
          dict(option_key='skip_changelog', option_value='True',
               env_key='SKIP_WRITE_GIT_CHANGELOG', env_value='True',
-              pkg_func=packaging.write_git_changelog, filename='ChangeLog')),
+              pkg_func=git.write_git_changelog, filename='ChangeLog')),
         ('authors_option_true',
          dict(option_key='skip_authors', option_value='True',
               env_key='SKIP_GENERATE_AUTHORS', env_value=None,
-              pkg_func=packaging.generate_authors, filename='AUTHORS')),
+              pkg_func=git.generate_authors, filename='AUTHORS')),
         ('authors_option_false',
          dict(option_key='skip_authors', option_value='False',
               env_key='SKIP_GENERATE_AUTHORS', env_value=None,
-              pkg_func=packaging.generate_authors, filename='AUTHORS')),
+              pkg_func=git.generate_authors, filename='AUTHORS')),
         ('authors_env_true',
          dict(option_key='skip_authors', option_value='False',
               env_key='SKIP_GENERATE_AUTHORS', env_value='True',
-              pkg_func=packaging.generate_authors, filename='AUTHORS')),
+              pkg_func=git.generate_authors, filename='AUTHORS')),
         ('authors_both_true',
          dict(option_key='skip_authors', option_value='True',
               env_key='SKIP_GENERATE_AUTHORS', env_value='True',
-              pkg_func=packaging.generate_authors, filename='AUTHORS')),
+              pkg_func=git.generate_authors, filename='AUTHORS')),
     ]
 
     def setUp(self):
         super(SkipFileWrites, self).setUp()
         self.temp_path = self.useFixture(fixtures.TempDir()).path
         self.root_dir = os.path.abspath(os.path.curdir)
-        self.git_dir = os.path.join(self.root_dir, ".git")
+        self.git_dir = os.path.join(self.root_dir, '.git')
         if not os.path.exists(self.git_dir):
-            self.skipTest("%s is missing; skipping git-related checks"
+            self.skipTest('%s is missing; skipping git-related checks'
                           % self.git_dir)
             return
         self.filename = os.path.join(self.temp_path, self.filename)
@@ -94,7 +97,7 @@ class SkipFileWrites(base.BaseTestCase):
                       option_dict=self.option_dict)
         self.assertEqual(
             not os.path.exists(self.filename),
-            (self.option_value.lower() in packaging.TRUE_VALUES
+            (self.option_value.lower() in common.TRUE_VALUES
              or self.env_value is not None))
 
 _changelog_content = """04316fe (review/monty_taylor/27519) Make python
@@ -116,7 +119,7 @@ class GitLogsTest(base.BaseTestCase):
         super(GitLogsTest, self).setUp()
         self.temp_path = self.useFixture(fixtures.TempDir()).path
         self.root_dir = os.path.abspath(os.path.curdir)
-        self.git_dir = os.path.join(self.root_dir, ".git")
+        self.git_dir = os.path.join(self.root_dir, '.git')
         self.useFixture(
             fixtures.EnvironmentVariable('SKIP_GENERATE_AUTHORS'))
         self.useFixture(
@@ -124,35 +127,35 @@ class GitLogsTest(base.BaseTestCase):
 
     def test_write_git_changelog(self):
         self.useFixture(fixtures.FakePopen(lambda _: {
-            "stdout": BytesIO(_changelog_content.encode('utf-8'))
+            'stdout': BytesIO(_changelog_content.encode('utf-8'))
         }))
 
-        packaging.write_git_changelog(git_dir=self.git_dir,
-                                      dest_dir=self.temp_path)
+        git.write_git_changelog(git_dir=self.git_dir,
+                                dest_dir=self.temp_path)
 
-        with open(os.path.join(self.temp_path, "ChangeLog"), "r") as ch_fh:
+        with open(os.path.join(self.temp_path, 'ChangeLog'), 'r') as ch_fh:
             changelog_contents = ch_fh.read()
-            self.assertIn("2013.2", changelog_contents)
-            self.assertIn("0.5.17", changelog_contents)
-            self.assertIn("------", changelog_contents)
-            self.assertIn("Refactor hooks file", changelog_contents)
-            self.assertNotIn("Refactor hooks file.", changelog_contents)
-            self.assertNotIn("182feb3", changelog_contents)
-            self.assertNotIn("review/monty_taylor/27519", changelog_contents)
-            self.assertNotIn("0.5.13", changelog_contents)
+            self.assertIn('2013.2', changelog_contents)
+            self.assertIn('0.5.17', changelog_contents)
+            self.assertIn('------', changelog_contents)
+            self.assertIn('Refactor hooks file', changelog_contents)
+            self.assertNotIn('Refactor hooks file.', changelog_contents)
+            self.assertNotIn('182feb3', changelog_contents)
+            self.assertNotIn('review/monty_taylor/27519', changelog_contents)
+            self.assertNotIn('0.5.13', changelog_contents)
             self.assertNotIn('Merge "', changelog_contents)
 
     def test_generate_authors(self):
-        author_old = u"Foo Foo <email@foo.com>"
-        author_new = u"Bar Bar <email@bar.com>"
-        co_author = u"Foo Bar <foo@bar.com>"
-        co_author_by = u"Co-authored-by: " + co_author
+        author_old = u'Foo Foo <email@foo.com>'
+        author_new = u'Bar Bar <email@bar.com>'
+        co_author = u'Foo Bar <foo@bar.com>'
+        co_author_by = u'Co-authored-by: ' + co_author
 
         git_log_cmd = (
-            "git --git-dir=%s log --format=%%aN <%%aE>"
+            'git --git-dir=%s log --format=%%aN <%%aE>'
             % self.git_dir)
-        git_co_log_cmd = ("git --git-dir=%s log" % self.git_dir)
-        git_top_level = "git rev-parse --show-toplevel"
+        git_co_log_cmd = ('git --git-dir=%s log' % self.git_dir)
+        git_top_level = 'git rev-parse --show-toplevel'
         cmd_map = {
             git_log_cmd: author_new,
             git_co_log_cmd: co_author_by,
@@ -160,25 +163,25 @@ class GitLogsTest(base.BaseTestCase):
         }
 
         exist_files = [self.git_dir,
-                       os.path.join(self.temp_path, "AUTHORS.in")]
+                       os.path.join(self.temp_path, 'AUTHORS.in')]
         self.useFixture(fixtures.MonkeyPatch(
-            "os.path.exists",
+            'os.path.exists',
             lambda path: os.path.abspath(path) in exist_files))
 
         def _fake_run_shell_command(cmd, **kwargs):
-            return cmd_map[" ".join(cmd)]
+            return cmd_map[' '.join(cmd)]
 
         self.useFixture(fixtures.MonkeyPatch(
-            "pbr.packaging._run_shell_command",
+            'pbr.common.run_shell_command',
             _fake_run_shell_command))
 
-        with open(os.path.join(self.temp_path, "AUTHORS.in"), "w") as auth_fh:
-            auth_fh.write("%s\n" % author_old)
+        with open(os.path.join(self.temp_path, 'AUTHORS.in'), 'w') as auth_fh:
+            auth_fh.write('%s\n' % author_old)
 
-        packaging.generate_authors(git_dir=self.git_dir,
-                                   dest_dir=self.temp_path)
+        git.generate_authors(git_dir=self.git_dir,
+                             dest_dir=self.temp_path)
 
-        with open(os.path.join(self.temp_path, "AUTHORS"), "r") as auth_fh:
+        with open(os.path.join(self.temp_path, 'AUTHORS'), 'r') as auth_fh:
             authors = auth_fh.read()
             self.assertTrue(author_old in authors)
             self.assertTrue(author_new in authors)
@@ -192,8 +195,8 @@ class BuildSphinxTest(base.BaseTestCase):
          dict(has_opt=True, autodoc='True', has_autodoc=True)),
         ('true_autodoc_caps_with_excludes',
          dict(has_opt=True, autodoc='True', has_autodoc=True,
-              excludes="fake_package.fake_private_module\n"
-              "fake_package.unknown_module")),
+              excludes='fake_package.fake_private_module\n'
+              'fake_package.unknown_module')),
         ('true_autodoc_lower',
          dict(has_opt=True, autodoc='true', has_autodoc=True)),
         ('false_autodoc',
@@ -206,66 +209,66 @@ class BuildSphinxTest(base.BaseTestCase):
         super(BuildSphinxTest, self).setUp()
 
         self.useFixture(fixtures.MonkeyPatch(
-            "sphinx.setup_command.BuildDoc.run", lambda self: None))
+            'sphinx.setup_command.BuildDoc.run', lambda self: None))
         from distutils import dist
         self.distr = dist.Distribution()
-        self.distr.packages = ("fake_package",)
-        self.distr.command_options["build_sphinx"] = {
-            "source_dir": ["a", "."]}
+        self.distr.packages = ('fake_package',)
+        self.distr.command_options['build_sphinx'] = {
+            'source_dir': ['a', '.']}
         pkg_fixture = fixtures.PythonPackage(
-            "fake_package", [("fake_module.py", b""),
-                             ("fake_private_module.py", b"")])
+            'fake_package', [('fake_module.py', b''),
+                             ('fake_private_module.py', b'')])
         self.useFixture(pkg_fixture)
         self.useFixture(base.DiveDir(pkg_fixture.base))
-        self.distr.command_options["pbr"] = {}
-        if hasattr(self, "excludes"):
-            self.distr.command_options["pbr"]["autodoc_exclude_modules"] = (
+        self.distr.command_options['pbr'] = {}
+        if hasattr(self, 'excludes'):
+            self.distr.command_options['pbr']['autodoc_exclude_modules'] = (
                 'setup.cfg',
-                "fake_package.fake_private_module\n"
-                "fake_package.unknown_module")
+                'fake_package.fake_private_module\n'
+                'fake_package.unknown_module')
         if self.has_opt:
-            options = self.distr.command_options["pbr"]
-            options["autodoc_index_modules"] = ('setup.cfg', self.autodoc)
+            options = self.distr.command_options['pbr']
+            options['autodoc_index_modules'] = ('setup.cfg', self.autodoc)
 
     def test_build_doc(self):
-        build_doc = packaging.LocalBuildDoc(self.distr)
+        build_doc = build_doc_cmd.LocalBuildDoc(self.distr)
         build_doc.run()
 
         self.assertTrue(
-            os.path.exists("api/autoindex.rst") == self.has_autodoc)
+            os.path.exists('api/autoindex.rst') == self.has_autodoc)
         self.assertTrue(
             os.path.exists(
-                "api/fake_package.fake_module.rst") == self.has_autodoc)
-        if not self.has_autodoc or hasattr(self, "excludes"):
+                'api/fake_package.fake_module.rst') == self.has_autodoc)
+        if not self.has_autodoc or hasattr(self, 'excludes'):
             assertion = self.assertFalse
         else:
             assertion = self.assertTrue
         assertion(
             os.path.exists(
-                "api/fake_package.fake_private_module.rst"))
+                'api/fake_package.fake_private_module.rst'))
 
     def test_builders_config(self):
-        build_doc = packaging.LocalBuildDoc(self.distr)
+        build_doc = build_doc_cmd.LocalBuildDoc(self.distr)
         build_doc.finalize_options()
 
         self.assertEqual(2, len(build_doc.builders))
         self.assertIn('html', build_doc.builders)
         self.assertIn('man', build_doc.builders)
 
-        build_doc = packaging.LocalBuildDoc(self.distr)
+        build_doc = build_doc_cmd.LocalBuildDoc(self.distr)
         build_doc.builders = ''
         build_doc.finalize_options()
 
         self.assertEqual('', build_doc.builders)
 
-        build_doc = packaging.LocalBuildDoc(self.distr)
+        build_doc = build_doc_cmd.LocalBuildDoc(self.distr)
         build_doc.builders = 'man'
         build_doc.finalize_options()
 
         self.assertEqual(1, len(build_doc.builders))
         self.assertIn('man', build_doc.builders)
 
-        build_doc = packaging.LocalBuildDoc(self.distr)
+        build_doc = build_doc_cmd.LocalBuildDoc(self.distr)
         build_doc.builders = 'html,man,doctest'
         build_doc.finalize_options()
 
@@ -283,104 +286,251 @@ class ParseRequirementsTest(base.BaseTestCase):
 
     def test_parse_requirements_normal(self):
         with open(self.tmp_file, 'w') as fh:
-            fh.write("foo\nbar")
+            fh.write('foo\nbar')
         self.assertEqual(['foo', 'bar'],
-                         packaging.parse_requirements([self.tmp_file]))
+                         requirements.parse_requirements([self.tmp_file]))
+
+    def test_parse_requirements_normal_a_version(self):
+        with open(self.tmp_file, 'w') as fh:
+            fh.write('foo>=1.3')
+        self.assertEqual(['foo>=1.3'],
+                         requirements.parse_requirements([self.tmp_file]))
+
+    def test_parse_requirements_normal_two_versions(self):
+        with open(self.tmp_file, 'w') as fh:
+            fh.write('foo>=2.12.0,!=2.13.0')
+        self.assertEqual(['foo>=2.12.0,!=2.13.0'],
+                         requirements.parse_requirements([self.tmp_file]))
+
+    def test_parse_requirements_normal_two_other_versions(self):
+        with open(self.tmp_file, 'w') as fh:
+            fh.write('foo>=1.4,<1.6')
+        self.assertEqual(['foo>=1.4,<1.6'],
+                         requirements.parse_requirements([self.tmp_file]))
+
+    def test_parse_requirements_normal_equal_versions(self):
+        with open(self.tmp_file, 'w') as fh:
+            fh.write('foo==0.9.1')
+        self.assertEqual(['foo==0.9.1'],
+                         requirements.parse_requirements([self.tmp_file]))
+
+    def test_parse_requirements_normal_many_versions(self):
+        with open(self.tmp_file, 'w') as fh:
+            fh.write('foo>=1.6.1,<2.0,>=2.1')
+        self.assertEqual(['foo>=1.6.1,<2.0,>=2.1'],
+                         requirements.parse_requirements([self.tmp_file]))
+
+    def test_parse_requirements_normal_package_name_with_dash(self):
+        with open(self.tmp_file, 'w') as fh:
+            fh.write('foo-bar>=1.6.1,<2.0,>=2.1')
+        self.assertEqual(['foo-bar>=1.6.1,<2.0,>=2.1'],
+                         requirements.parse_requirements([self.tmp_file]))
+
+    def test_parse_requirements_normal_package_name_with_underscore(self):
+        with open(self.tmp_file, 'w') as fh:
+            fh.write('foo_bar>=1.6.1,<2.0,>=2.1')
+        self.assertEqual(['foo-bar>=1.6.1,<2.0,>=2.1'],
+                         requirements.parse_requirements([self.tmp_file]))
+
+    def test_parse_requirements_normal_package_name_with_period(self):
+        with open(self.tmp_file, 'w') as fh:
+            fh.write('foo.bar>=1.6.1,<2.0,>=2.1')
+        self.assertEqual(['foo.bar>=1.6.1,<2.0,>=2.1'],
+                         requirements.parse_requirements([self.tmp_file]))
+
+    def test_parse_requirements_normal_package_name_with_mixed(self):
+        with open(self.tmp_file, 'w') as fh:
+            fh.write('foo.bar_plug>=1.6.1,<2.0,>=2.1')
+        self.assertEqual(['foo.bar-plug>=1.6.1,<2.0,>=2.1'],
+                         requirements.parse_requirements([self.tmp_file]))
 
     def test_parse_requirements_with_git_egg_url(self):
         with open(self.tmp_file, 'w') as fh:
-            fh.write("-e git://foo.com/zipball#egg=bar")
+            fh.write('-e git://foo.com/zipball#egg=bar')
         self.assertEqual(['bar'],
-                         packaging.parse_requirements([self.tmp_file]))
+                         requirements.parse_requirements([self.tmp_file]))
+
+    def test_parse_requirements_with_git_egg_url_uneditable(self):
+        with open(self.tmp_file, 'w') as fh:
+            fh.write('git://foo.com/zipball#egg=bar')
+        self.assertEqual(['bar'],
+                         requirements.parse_requirements([self.tmp_file]))
 
     def test_parse_requirements_with_versioned_git_egg_url(self):
         with open(self.tmp_file, 'w') as fh:
-            fh.write("-e git://foo.com/zipball#egg=bar-1.2.4")
+            fh.write('-e git://foo.com/zipball#egg=bar-1.2.4')
         self.assertEqual(['bar>=1.2.4'],
-                         packaging.parse_requirements([self.tmp_file]))
+                         requirements.parse_requirements([self.tmp_file]))
+
+    def test_parse_requirements_with_versioned_git_egg_url_uneditable(self):
+        with open(self.tmp_file, 'w') as fh:
+            fh.write('git://foo.com/zipball#egg=bar-1.2.4')
+        self.assertEqual(['bar>=1.2.4'],
+                         requirements.parse_requirements([self.tmp_file]))
+
+    def test_parse_requirements_git_http_egg_url_filename_not_eq_pkg(self):
+        with open(self.tmp_file, 'w') as fh:
+            fh.write(
+                '-e git+http://foo.com/swift/swift-master.tar.gz#egg=swift')
+        self.assertEqual(['swift'],
+                         requirements.parse_requirements([self.tmp_file]))
+
+    def test_parse_requirements_with_http(self):
+        with open(self.tmp_file, 'w') as fh:
+            fh.write('https://foo.com/bar.tar.gz')
+        self.assertEqual(['bar'],
+                         requirements.parse_requirements([self.tmp_file]))
+
+    def test_parse_requirements_with_versioned_http(self):
+        with open(self.tmp_file, 'w') as fh:
+            fh.write('https://foo.com/bar-4.2.1.tar.gz')
+        self.assertEqual(['bar>=4.2.1'],
+                         requirements.parse_requirements([self.tmp_file]))
+
+    def test_parse_requirements_with_versioned_http_underscore_name(self):
+        with open(self.tmp_file, 'w') as fh:
+            fh.write('https://foo.com/foo_bar-4.2.1.tar.gz')
+        self.assertEqual(['foo-bar>=4.2.1'],
+                         requirements.parse_requirements([self.tmp_file]))
 
     def test_parse_requirements_with_http_egg_url(self):
         with open(self.tmp_file, 'w') as fh:
-            fh.write("https://foo.com/zipball#egg=bar")
+            fh.write('https://foo.com/zipball#egg=bar')
         self.assertEqual(['bar'],
-                         packaging.parse_requirements([self.tmp_file]))
+                         requirements.parse_requirements([self.tmp_file]))
+
+    def test_parse_requirements_with_http_egg_underscores_url(self):
+        with open(self.tmp_file, 'w') as fh:
+            fh.write('https://foo.com/zipball#egg=bar_foo_test')
+        self.assertEqual(['bar-foo-test'],
+                         requirements.parse_requirements([self.tmp_file]))
+
+    def test_parse_requirements_with_http_egg_dash_url(self):
+        with open(self.tmp_file, 'w') as fh:
+            fh.write('https://foo.com/zipball#egg=bar-foo-test')
+        self.assertEqual(['bar-foo-test'],
+                         requirements.parse_requirements([self.tmp_file]))
+
+    def test_parse_requirements_with_http_egg_url_filename_not_eq_pkg(self):
+        with open(self.tmp_file, 'w') as fh:
+            fh.write('http://foo.com/swift/swift-master.tar.gz#egg=swift')
+        self.assertEqual(['swift'],
+                         requirements.parse_requirements([self.tmp_file]))
 
     def test_parse_requirements_with_versioned_http_egg_url(self):
         with open(self.tmp_file, 'w') as fh:
-            fh.write("https://foo.com/zipball#egg=bar-4.2.1")
+            fh.write('https://foo.com/zipball#egg=bar-4.2.1')
         self.assertEqual(['bar>=4.2.1'],
-                         packaging.parse_requirements([self.tmp_file]))
+                         requirements.parse_requirements([self.tmp_file]))
+
+    def test_parse_requirements_with_versioned_http_egg_underscores_url(self):
+        with open(self.tmp_file, 'w') as fh:
+            fh.write('https://foo.com/zipball#egg=bar_foobar-4.2.1')
+        self.assertEqual(['bar-foobar>=4.2.1'],
+                         requirements.parse_requirements([self.tmp_file]))
+
+    def test_parse_requirements_with_versioned_http_egg_dashes_url(self):
+        with open(self.tmp_file, 'w') as fh:
+            fh.write('https://foo.com/zipball#egg=bar-foobar-4.2.1')
+        self.assertEqual(['bar-foobar>=4.2.1'],
+                         requirements.parse_requirements([self.tmp_file]))
+
+    def test_parse_requirements_with_dual_versioned_http_egg_url(self):
+        with open(self.tmp_file, 'w') as fh:
+            fh.write('https://foo.com/bar-4.2.1.tar.gz#egg=bar-4.2.1')
+        self.assertEqual(['bar>=4.2.1'],
+                         requirements.parse_requirements([self.tmp_file]))
 
     def test_parse_requirements_removes_index_lines(self):
         with open(self.tmp_file, 'w') as fh:
-            fh.write("-f foobar")
-        self.assertEqual([], packaging.parse_requirements([self.tmp_file]))
+            fh.write('-f foobar')
+        self.assertEqual([], requirements.parse_requirements([self.tmp_file]))
 
     def test_parse_requirements_override_with_env(self):
         with open(self.tmp_file, 'w') as fh:
-            fh.write("foo\nbar")
+            fh.write('foo\nbar')
         self.useFixture(
             fixtures.EnvironmentVariable('PBR_REQUIREMENTS_FILES',
                                          self.tmp_file))
         self.assertEqual(['foo', 'bar'],
-                         packaging.parse_requirements())
+                         requirements.parse_requirements())
 
     def test_parse_requirements_override_with_env_multiple_files(self):
         with open(self.tmp_file, 'w') as fh:
-            fh.write("foo\nbar")
+            fh.write('foo\nbar')
         self.useFixture(
             fixtures.EnvironmentVariable('PBR_REQUIREMENTS_FILES',
-                                         "no-such-file," + self.tmp_file))
+                                         'no-such-file,' + self.tmp_file))
         self.assertEqual(['foo', 'bar'],
-                         packaging.parse_requirements())
+                         requirements.parse_requirements())
 
     def test_get_requirement_from_file_empty(self):
-        actual = packaging.get_reqs_from_files([])
+        actual = requirements._get_reqs_from_files([])
         self.assertEqual([], actual)
 
     def test_parse_requirements_with_comments(self):
         with open(self.tmp_file, 'w') as fh:
-            fh.write("# this is a comment\nfoobar\n# and another one\nfoobaz")
+            fh.write('# this is a comment\nfoobar\n# and another one\nfoobaz')
         self.assertEqual(['foobar', 'foobaz'],
-                         packaging.parse_requirements([self.tmp_file]))
+                         requirements.parse_requirements([self.tmp_file]))
+
+    def test_parse_requirements_with_inline_comments(self):
+        with open(self.tmp_file, 'w') as fh:
+            fh.write('hgtools # dependency of pytest-runner')
+        self.assertEqual(['hgtools'],
+                         requirements.parse_requirements([self.tmp_file]))
 
     def test_parse_requirements_python_version(self):
-        with open("requirements-py%d.txt" % sys.version_info[0],
-                  "w") as fh:
-            fh.write("# this is a comment\nfoobar\n# and another one\nfoobaz")
+        with open('requirements-py%d.txt' % sys.version_info[0], 'w') as fh:
+            fh.write('# this is a comment\nfoobar\n# and another one\nfoobaz')
         self.assertEqual(['foobar', 'foobaz'],
-                         packaging.parse_requirements())
+                         requirements.parse_requirements())
 
     def test_parse_requirements_right_python_version(self):
-        with open("requirements-py1.txt", "w") as fh:
-            fh.write("thisisatrap")
-        with open("requirements-py%d.txt" % sys.version_info[0],
-                  "w") as fh:
-            fh.write("# this is a comment\nfoobar\n# and another one\nfoobaz")
+        with open('requirements-py1.txt', 'w') as fh:
+            fh.write('thisisatrap')
+        with open('requirements-py%d.txt' % sys.version_info[0],
+                  'w') as fh:
+            fh.write('# this is a comment\nfoobar\n# and another one\nfoobaz')
         self.assertEqual(['foobar', 'foobaz'],
-                         packaging.parse_requirements())
+                         requirements.parse_requirements())
 
 
 class ParseDependencyLinksTest(base.BaseTestCase):
 
     def setUp(self):
         super(ParseDependencyLinksTest, self).setUp()
-        (fd, self.tmp_file) = tempfile.mkstemp(prefix="openstack",
-                                               suffix=".setup")
+        (fd, self.tmp_file) = tempfile.mkstemp(prefix='openstack',
+                                               suffix='.setup')
 
     def test_parse_dependency_normal(self):
-        with open(self.tmp_file, "w") as fh:
-            fh.write("http://test.com\n")
+        with open(self.tmp_file, 'w') as fh:
+            fh.write('http://test.com\n')
         self.assertEqual(
-            ["http://test.com"],
-            packaging.parse_dependency_links([self.tmp_file]))
+            ['http://test.com'],
+            requirements.parse_dependency_links([self.tmp_file]))
 
     def test_parse_dependency_with_git_egg_url(self):
-        with open(self.tmp_file, "w") as fh:
-            fh.write("-e git://foo.com/zipball#egg=bar")
+        with open(self.tmp_file, 'w') as fh:
+            fh.write('-e git://foo.com/zipball#egg=bar')
         self.assertEqual(
-            ["git://foo.com/zipball#egg=bar"],
-            packaging.parse_dependency_links([self.tmp_file]))
+            ['git://foo.com/zipball#egg=bar'],
+            requirements.parse_dependency_links([self.tmp_file]))
+
+    def test_parse_requirements_with_comments(self):
+        with open(self.tmp_file, 'w') as fh:
+            fh.write('# this is a comment\nfoobar\nhttp://test.com\n')
+        self.assertEqual(['http://test.com'],
+                         requirements.parse_dependency_links([self.tmp_file]))
+
+    def test_parse_requirements_override_with_env(self):
+        with open(self.tmp_file, 'w') as fh:
+            fh.write('https://test.com\n')
+        self.useFixture(
+            fixtures.EnvironmentVariable('PBR_REQUIREMENTS_FILES',
+                                         self.tmp_file))
+        self.assertEqual(['https://test.com'],
+                         requirements.parse_dependency_links())
 
 
 def load_tests(loader, in_tests, pattern):
