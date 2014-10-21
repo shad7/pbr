@@ -63,3 +63,5 @@ class CommandsConfig(base.BaseConfig):
         # We always want non-egg install unless explicitly requested
         if 'manpages' in self.pbr_config or not use_egg:
             self.add_command('pbr.cmds.install.LocalInstall')
+
+        self.add_command('pbr.cmds.upload.LocalUpload')
