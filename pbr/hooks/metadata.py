@@ -14,7 +14,7 @@
 # under the License.
 
 from pbr.hooks import base
-from pbr import packaging
+from pbr.pkgversion import metadata
 from pbr import requirements
 
 
@@ -23,7 +23,7 @@ class MetadataConfig(base.BaseConfig):
     section = 'metadata'
 
     def hook(self):
-        self.config['version'] = packaging.get_version(
+        self.config['version'] = metadata.get_package_version(
             self.config['name'], self.config.get('version', None))
         self.append_text_list('requires_dist',
                               requirements.parse_requirements())

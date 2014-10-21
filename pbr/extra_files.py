@@ -20,7 +20,6 @@ _extra_files = []
 
 
 def get_extra_files():
-    global _extra_files
     return _extra_files
 
 
@@ -31,5 +30,4 @@ def set_extra_files(extra_files):
             raise errors.DistutilsFileError(
                 '%s from the extra_files option in setup.cfg does not '
                 'exist' % filename)
-    global _extra_files
     _extra_files[:] = extra_files[:]

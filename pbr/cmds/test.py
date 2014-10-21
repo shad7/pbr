@@ -27,7 +27,7 @@ try:
                     requirements.PipInstallTestRequires):
         """Make setup.py test do the right thing."""
 
-        command_name = 'test'
+        command_name = 'testr'
 
         user_options = setuptools_command.Testr.user_options + [
             ('coverage-package-name=', None,
